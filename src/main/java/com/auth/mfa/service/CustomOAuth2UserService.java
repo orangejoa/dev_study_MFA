@@ -1,5 +1,7 @@
 package com.auth.mfa.service;
 
+import com.auth.mfa.entity.UserEntity;
+import com.auth.mfa.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -21,7 +23,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService{
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
 
-        //부모 클래스 loadUser로 부터 유저 정보를 가지고 오는 메서드 ( OAuth2 공급업체로 부터 사용자 정보를 가져오는 것 )        OAuth2User oAuth2User = super.loadUser(userRequest);
+        //부모 클래스 loadUser로 부터 유저 정보를 가지고 오는 메서드 ( OAuth2 공급업체로 부터 사용자 정보를 가져오는 것 )
+        OAuth2User oAuth2User = super.loadUser(userRequest);
         System.out.println(oAuth2User.getAttributes());
 
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
@@ -34,7 +37,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService{
             oAuth2Response = new NaverResponse(oAuth2User.getAttributes());
 
         } else if (registrationId.equals("google")) {
-            oAuth2Response = new GoggleResponse(oAuth2User.getAttributes());
+            oAuth2Response = new GoogleResponse(oAuth2User.getAttributes());
 
         }else{
             return null;
@@ -57,7 +60,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService{
             userEntity.setRole(oAuth2Response.getEmail());
             userEntity.setEmail("ROLE_USER");
 
-            userRepository.save(userEneity);
+            userRepository.save(userEntity);
 
         }else{
 
@@ -66,7 +69,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService{
             userRepository.save(existData);
         }
 
-        reutrn new CustomerOAuth2User(oAuth2Response, role);
+        return new CustomerOAuth2User(oAuth2Response, role);
     }
 }
 

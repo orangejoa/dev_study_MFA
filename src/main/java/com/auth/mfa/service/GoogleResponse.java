@@ -1,5 +1,7 @@
 package com.auth.mfa.service;
 
+import org.springframework.stereotype.Service;
+
 import java.util.Map;
 
 public class GoogleResponse implements OAuth2Response{
