@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
+
 @RequiredArgsConstructor
 public class CustomOAuth2User implements OAuth2User {
 

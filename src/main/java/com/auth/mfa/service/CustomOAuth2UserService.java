@@ -2,6 +2,7 @@ package com.auth.mfa.service;
 
 import com.auth.mfa.entity.UserEntity;
 import com.auth.mfa.repository.UserRepository;
+import com.auth.mfa.security.CustomOAuth2User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -69,7 +70,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService{
             userRepository.save(existData);
         }
 
-        return new CustomerOAuth2User(oAuth2Response, role);
+        return new CustomOAuth2User(oAuth2Response, role);
     }
 }
 
