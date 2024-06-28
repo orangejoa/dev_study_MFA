@@ -10,6 +10,9 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 
 @Service
 @RequiredArgsConstructor
@@ -26,51 +29,53 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService{
 
         //부모 클래스 loadUser로 부터 유저 정보를 가지고 오는 메서드 ( OAuth2 공급업체로 부터 사용자 정보를 가져오는 것 )
         OAuth2User oAuth2User = super.loadUser(userRequest);
-        System.out.println(oAuth2User.getAttributes());
+        System.out.println("[유저에 바인딩 된 값 : ]"+oAuth2User.getAttributes());
 
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
-
-
-        OAuth2Response oAuth2Response = null;
-
+        OAuth2Response oAuth2Response;
+        Map<String, Object> attribute = new HashMap<>(oAuth2User.getAttributes());
         if (registrationId.equals("naver")) {
 
-            oAuth2Response = new NaverResponse(oAuth2User.getAttributes());
+            Map<String, Object> responseAttributes = (Map<String, Object>) attribute.get("response");
+            if (responseAttributes != null && responseAttributes.containsKey("id")) {
+                attribute.put("id", responseAttributes.get("id"));
+                oAuth2Response = new NaverResponse(responseAttributes);
+            } else {
+                throw new IllegalArgumentException("Missing attribute 'response.id' in attributes");
+            }
 
         } else if (registrationId.equals("google")) {
-            oAuth2Response = new GoogleResponse(oAuth2User.getAttributes());
+            if (!attribute.containsKey("id")) {
+                attribute.put("id", attribute.get("sub")); // Google의 기본 ID 속성
+            }
+            oAuth2Response = new GoogleResponse(attribute);
 
         }else{
-            return null;
+            throw new OAuth2AuthenticationException("Unsupported provider: " + registrationId);
         }
 
 // 구글과 네이버 서비스마다 인증 규격이 상이하기 때문에 서로 다른 DTO로 담아야 한다.
 // 따라서 OAuth2 DTO 객체 격인 OAuth2Response 객체를 인터페이스로 만든다.
 // 네이버로 인터페이스를 구현, 구글 타입으로 인터페이스를 구현하는 식으로 진행한다.
 
-        String username = oAuth2Response.getProvider()+ " "+oAuth2Response.getProviderId();
-
+        String username = oAuth2Response.getProvider() + " " + oAuth2Response.getProviderId();
         UserEntity existData = userRepository.findByUsername(username);
+        String role;
 
-        String role =null;
-
-        if(existData ==null){
-
+        if (existData == null) {
             UserEntity userEntity = new UserEntity();
             userEntity.setUsername(username);
-            userEntity.setRole(oAuth2Response.getEmail());
-            userEntity.setEmail("ROLE_USER");
-
+            userEntity.setRole("ROLE_USER");
+            userEntity.setEmail(oAuth2Response.getEmail());
             userRepository.save(userEntity);
-
-        }else{
-
+            role = "ROLE_USER";
+        } else {
             role = existData.getRole();
             existData.setEmail(oAuth2Response.getEmail());
             userRepository.save(existData);
         }
 
-        return new CustomOAuth2User(oAuth2Response, role);
+        return new CustomOAuth2User((OAuth2Response) attribute, role);
     }
 }
 
